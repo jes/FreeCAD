@@ -68,6 +68,8 @@ public:
     void recomputeFeature(bool recompute=true);
     QString getMessage() const {return diagMessage;}
 
+    void abortTransformation();
+
 private:
     void showRejectedShape(TopoDS_Shape shape);
 };

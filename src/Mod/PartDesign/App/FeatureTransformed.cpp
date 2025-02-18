@@ -50,6 +50,7 @@
 #include "FeatureSketchBased.h"
 #include "Mod/Part/App/TopoShapeOpCode.h"
 
+#include <atomic>
 
 using namespace PartDesign;
 
@@ -62,6 +63,13 @@ PROPERTY_SOURCE(PartDesign::Transformed, PartDesign::FeatureRefine)
 std::array<char const*, 3> transformModeEnums = {"Transform tool shapes",
                                                  "Transform body",
                                                  nullptr};
+
+static std::atomic<int> abortExecution{0};
+
+void sigusr1_handler(int)
+{
+    abortExecution = 1;
+}
 
 Transformed::Transformed()
 {
@@ -279,6 +287,10 @@ App::DocumentObjectExecReturn* Transformed::execute()
         auto transformIter = transformations.cbegin();
         transformIter++;
         for ( ; transformIter != transformations.end(); transformIter++) {
+            if (abortExecution.load()) {
+                // Abort the transformation because of SIGUSR1
+                return std::vector<TopoShape>();
+            }
             auto opName = Data::indexSuffix(idx++);
             shapes.emplace_back(shape.makeElementTransform(*transformIter, opName.c_str()));
         }
@@ -293,10 +305,15 @@ App::DocumentObjectExecReturn* Transformed::execute()
             // feature causes a fuse/cut to fail. The downside is that performance suffers when
             // there are many originals. But it seems safe to assume that in most cases there are
             // few originals and many transformations
+            signal(SIGUSR1, sigusr1_handler);
             for (auto original : originals) {
                 // Extract the original shape and determine whether to cut or to fuse
                 Part::TopoShape fuseShape;
                 Part::TopoShape cutShape;
+
+                if (abortExecution.load()) {
+                    return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP("Exception", "Transformation aborted by SIGUSR1"));
+                }
 
                 auto feature = Base::freecad_dynamic_cast<PartDesign::FeatureAddSub>(original);
                 if (!feature) {
@@ -319,10 +336,18 @@ App::DocumentObjectExecReturn* Transformed::execute()
                     cutShape = cutShape.makeElementTransform(trsf);
                 }
                 if (!fuseShape.isNull()) {
-                    supportShape.makeElementFuse(getTransformedCompShape(supportShape, fuseShape));
+                    std::vector<TopoShape> shapes = getTransformedCompShape(supportShape, fuseShape);
+                    if (abortExecution.load()) {
+                        return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP("Exception", "Transformation aborted by SIGUSR1"));
+                    }
+                    supportShape.makeElementFuse(shapes);
                 }
                 if (!cutShape.isNull()) {
-                    supportShape.makeElementCut(getTransformedCompShape(supportShape, cutShape));
+                    std::vector<TopoShape> shapes = getTransformedCompShape(supportShape, cutShape);
+                    if (abortExecution.load()) {
+                        return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP("Exception", "Transformation aborted by SIGUSR1"));
+                    }
+                    supportShape.makeElementCut(shapes);
                 }
             }
             break;
