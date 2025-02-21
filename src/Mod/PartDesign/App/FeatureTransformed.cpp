@@ -196,6 +196,23 @@ short Transformed::mustExecute() const
     return PartDesign::Feature::mustExecute();
 }
 
+// override UserBreak to make it public
+class BRepAlgoAPI_BooleanOperation_UserBreak : public BRepAlgoAPI_BooleanOperation
+{
+public:
+    void UserBreak(const Message_ProgressScope& scope) {
+        BRepAlgoAPI_BooleanOperation::UserBreak(scope);
+    }
+};
+
+void Transformed::abort()
+{
+    if (fcbop) {
+        Base::Console().Error("Aborting computation with fcbop\n");
+        static_cast<BRepAlgoAPI_BooleanOperation_UserBreak*>(fcbop)->UserBreak(Message_ProgressScope{});
+    }
+}
+
 App::DocumentObjectExecReturn* Transformed::execute()
 {
     if (isMultiTransformChild()) {
@@ -319,15 +336,18 @@ App::DocumentObjectExecReturn* Transformed::execute()
                     cutShape = cutShape.makeElementTransform(trsf);
                 }
                 if (!fuseShape.isNull()) {
-                    supportShape.makeElementFuse(getTransformedCompShape(supportShape, fuseShape));
+                    supportShape.makeElementFuseBreakable(&fcbop, getTransformedCompShape(supportShape, fuseShape));
+                    fcbop = nullptr;
                 }
                 if (!cutShape.isNull()) {
-                    supportShape.makeElementCut(getTransformedCompShape(supportShape, cutShape));
+                    supportShape.makeElementCutBreakable(&fcbop, getTransformedCompShape(supportShape, cutShape));
+                    fcbop = nullptr;
                 }
             }
             break;
         case Mode::TransformBody: {
-            supportShape.makeElementFuse(getTransformedCompShape(supportShape, supportShape));
+            supportShape.makeElementFuseBreakable(&fcbop, getTransformedCompShape(supportShape, supportShape));
+            fcbop = nullptr;
             break;
         }
     }

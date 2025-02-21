@@ -27,6 +27,8 @@
 #include <list>
 #include <unordered_map>
 
+#include <Mod/Part/App/FCBRepAlgoAPI_BooleanOperation.h>
+
 #include <App/ComplexGeoData.h>
 #include <Base/Exception.h>
 #include <Mod/Part/PartGlobal.h>
@@ -1376,6 +1378,10 @@ public:
     TopoShape& makeElementFuse(const std::vector<TopoShape>& sources,
                                const char* op = nullptr,
                                double tol = -1.0);
+    TopoShape& makeElementFuseBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+                                       const std::vector<TopoShape>& sources,
+                                       const char* op = nullptr,
+                                       double tol = -1.0); 
     /** Make a fusion of this shape and an input shape
      *
      * @param source: the source shape
@@ -1405,6 +1411,10 @@ public:
      */
     TopoShape&
     makeElementCut(const std::vector<TopoShape>& sources, const char* op = nullptr, double tol = -1.0);
+    TopoShape& makeElementCutBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+                                       const std::vector<TopoShape>& sources,
+                                       const char* op = nullptr,
+                                       double tol = -1.0);
     /** Make a boolean cut of this shape with an input shape
      *
      * @param source: the source shape
@@ -1880,6 +1890,12 @@ public:
                                   const std::vector<TopoShape>& sources,
                                   const char* op = nullptr,
                                   double tol = -1.0);
+
+    TopoShape& makeElementBooleanBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+                                          const char* maker,
+                                          const std::vector<TopoShape>& sources,
+                                          const char* op = nullptr,
+                                          double tol = -1.0);
     /** Generalized shape making with mapped element name from shape history
      *
      * @param maker: op code from TopoShapeOpCodes

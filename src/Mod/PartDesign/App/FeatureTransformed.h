@@ -99,6 +99,8 @@ public:
      */
     TopoDS_Shape rejected;
 
+    void abort();
+
 protected:
     void Restore(Base::XMLReader& reader) override;
     void handleChangedPropertyType(Base::XMLReader& reader,
@@ -109,6 +111,8 @@ protected:
     static TopoDS_Shape getRemainingSolids(const TopoDS_Shape&);
 
 private:
+
+    BRepAlgoAPI_BooleanOperation* fcbop;
 };
 
 }  // namespace PartDesign

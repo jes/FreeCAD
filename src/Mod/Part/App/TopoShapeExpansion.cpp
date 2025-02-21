@@ -4118,11 +4118,28 @@ TopoShape::makeElementFuse(const std::vector<TopoShape>& shapes, const char* op,
 }
 
 TopoShape&
+TopoShape::makeElementFuseBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+                                   const std::vector<TopoShape>& shapes,
+                                   const char* op,
+                                   double tol)
+{
+    return makeElementBooleanBreakable(fcbop, Part::OpCodes::Fuse, shapes, op, tol);
+}
+
+TopoShape&
 TopoShape::makeElementCut(const std::vector<TopoShape>& shapes, const char* op, double tol)
 {
     return makeElementBoolean(Part::OpCodes::Cut, shapes, op, tol);
 }
 
+TopoShape&
+TopoShape::makeElementCutBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+                                   const std::vector<TopoShape>& shapes,
+                                   const char* op,
+                                   double tol)
+{
+    return makeElementBooleanBreakable(fcbop, Part::OpCodes::Cut, shapes, op, tol);
+}
 
 TopoShape& TopoShape::makeElementShape(BRepBuilderAPI_MakeShape& mkShape,
                                        const TopoShape& source,
@@ -5571,8 +5588,17 @@ TopoShape& TopoShape::makeElementBoolean(const char* maker,
 }
 
 
+TopoShape& TopoShape::makeElementBoolean(
+    const char* maker,
+                                         const std::vector<TopoShape>& shapes,
+                                         const char* op,
+                                         double tolerance) {
+    return makeElementBooleanBreakable(nullptr, maker, shapes, op, tolerance);
+}
+
 // TODO: Refactor this so that each OpCode type is a separate method to reduce size
-TopoShape& TopoShape::makeElementBoolean(const char* maker,
+TopoShape& TopoShape::makeElementBooleanBreakable(BRepAlgoAPI_BooleanOperation** fcbop,
+                                         const char* maker,
                                          const std::vector<TopoShape>& shapes,
                                          const char* op,
                                          double tolerance)
@@ -5760,6 +5786,9 @@ TopoShape& TopoShape::makeElementBoolean(const char* maker,
         mk->SetFuzzyValue(tolerance);
     } else if (tolerance < 0.0) {
         FCBRepAlgoAPIHelper::setAutoFuzzy(mk.get());
+    }
+    if (fcbop) {
+        *fcbop = mk.get();
     }
     mk->Build();
     makeElementShape(*mk, inputs, op);
