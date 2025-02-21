@@ -29,6 +29,7 @@
 #ifndef FCREPALGOAPIBOOLEANOPERATION_H
 #define FCREPALGOAPIBOOLEANOPERATION_H
 #include <BRepAlgoAPI_BooleanOperation.hxx>
+#include <Base/Console.h>
 
 class FCBRepAlgoAPIHelper
 {
@@ -52,6 +53,8 @@ public:
     // not an override - real Build() has optionals, sadly type of those optionals that are differs between OCCT versions
     Standard_EXPORT virtual void Build(); // NOLINT(clang-diagnostic-overloaded-virtual, -Woverloaded-virtual)
 
+    void abort() { aborted = true; Base::Console().Error("abort called\n"); }
+
 protected: //! @name Constructors
 
   //! Constructor to perform Boolean operation on only two arguments.
@@ -60,9 +63,15 @@ protected: //! @name Constructors
                                                  const TopoDS_Shape& theS2,
                                                  BOPAlgo_Operation theOperation);
 
+    bool UserBreak(const Message_ProgressScope& scope) {
+      Base::Console().Error("UserBreak called\n");
+      return aborted;
+    }
+
 
 private:
   Standard_EXPORT TopoDS_Shape RecursiveCutCompound(const TopoDS_Shape& theArgument);
   Standard_EXPORT void RecursiveAddArguments(const TopoDS_Shape& theArgument);
+  bool aborted;
 };
 #endif

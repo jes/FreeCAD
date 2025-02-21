@@ -4118,7 +4118,7 @@ TopoShape::makeElementFuse(const std::vector<TopoShape>& shapes, const char* op,
 }
 
 TopoShape&
-TopoShape::makeElementFuseBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+TopoShape::makeElementFuseBreakable(FCBRepAlgoAPI_BooleanOperation **fcbop,
                                    const std::vector<TopoShape>& shapes,
                                    const char* op,
                                    double tol)
@@ -4133,7 +4133,7 @@ TopoShape::makeElementCut(const std::vector<TopoShape>& shapes, const char* op, 
 }
 
 TopoShape&
-TopoShape::makeElementCutBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+TopoShape::makeElementCutBreakable(FCBRepAlgoAPI_BooleanOperation **fcbop,
                                    const std::vector<TopoShape>& shapes,
                                    const char* op,
                                    double tol)
@@ -5597,7 +5597,7 @@ TopoShape& TopoShape::makeElementBoolean(
 }
 
 // TODO: Refactor this so that each OpCode type is a separate method to reduce size
-TopoShape& TopoShape::makeElementBooleanBreakable(BRepAlgoAPI_BooleanOperation** fcbop,
+TopoShape& TopoShape::makeElementBooleanBreakable(FCBRepAlgoAPI_BooleanOperation** fcbop,
                                          const char* maker,
                                          const std::vector<TopoShape>& shapes,
                                          const char* op,
@@ -5735,7 +5735,7 @@ TopoShape& TopoShape::makeElementBooleanBreakable(BRepAlgoAPI_BooleanOperation**
         return *this;
     }
 
-    std::unique_ptr<BRepAlgoAPI_BooleanOperation> mk;
+    std::unique_ptr<FCBRepAlgoAPI_BooleanOperation> mk;
     if (strcmp(maker, Part::OpCodes::Fuse) == 0) {
         mk.reset(new FCBRepAlgoAPI_Fuse);
     }
@@ -5745,10 +5745,10 @@ TopoShape& TopoShape::makeElementBooleanBreakable(BRepAlgoAPI_BooleanOperation**
     else if (strcmp(maker, Part::OpCodes::Common) == 0) {
         mk.reset(new FCBRepAlgoAPI_Common);
     }
-    else if (strcmp(maker, Part::OpCodes::Section) == 0) {
+    /*else if (strcmp(maker, Part::OpCodes::Section) == 0) {
         mk.reset(new FCBRepAlgoAPI_Section);
         buildShell = false;
-    }
+    }*/
     else {
         FC_THROWM(Base::CADKernelError, "Unknown maker");
     }

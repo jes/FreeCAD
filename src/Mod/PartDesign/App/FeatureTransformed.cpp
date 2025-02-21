@@ -196,20 +196,11 @@ short Transformed::mustExecute() const
     return PartDesign::Feature::mustExecute();
 }
 
-// override UserBreak to make it public
-class BRepAlgoAPI_BooleanOperation_UserBreak : public BRepAlgoAPI_BooleanOperation
-{
-public:
-    void UserBreak(const Message_ProgressScope& scope) {
-        BRepAlgoAPI_BooleanOperation::UserBreak(scope);
-    }
-};
-
 void Transformed::abort()
 {
     if (fcbop) {
         Base::Console().Error("Aborting computation with fcbop\n");
-        static_cast<BRepAlgoAPI_BooleanOperation_UserBreak*>(fcbop)->UserBreak(Message_ProgressScope{});
+        fcbop->abort();
     }
 }
 

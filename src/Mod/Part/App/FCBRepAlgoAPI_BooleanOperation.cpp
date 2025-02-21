@@ -36,7 +36,7 @@
 #include <Precision.hxx>
 #include <FuzzyHelper.h>
 
-FCBRepAlgoAPI_BooleanOperation::FCBRepAlgoAPI_BooleanOperation()
+FCBRepAlgoAPI_BooleanOperation::FCBRepAlgoAPI_BooleanOperation() : aborted(false)
 {
     SetRunParallel(Standard_True);
     SetNonDestructive(Standard_True);

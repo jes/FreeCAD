@@ -31,7 +31,6 @@
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <Mod/Part/App/FCBRepAlgoAPI_BooleanOperation.h>
 
-
 class FCBRepAlgoAPI_Fuse : public FCBRepAlgoAPI_BooleanOperation
 {
 public:

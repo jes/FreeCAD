@@ -1378,7 +1378,7 @@ public:
     TopoShape& makeElementFuse(const std::vector<TopoShape>& sources,
                                const char* op = nullptr,
                                double tol = -1.0);
-    TopoShape& makeElementFuseBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+    TopoShape& makeElementFuseBreakable(FCBRepAlgoAPI_BooleanOperation **fcbop,
                                        const std::vector<TopoShape>& sources,
                                        const char* op = nullptr,
                                        double tol = -1.0); 
@@ -1411,7 +1411,7 @@ public:
      */
     TopoShape&
     makeElementCut(const std::vector<TopoShape>& sources, const char* op = nullptr, double tol = -1.0);
-    TopoShape& makeElementCutBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+    TopoShape& makeElementCutBreakable(FCBRepAlgoAPI_BooleanOperation **fcbop,
                                        const std::vector<TopoShape>& sources,
                                        const char* op = nullptr,
                                        double tol = -1.0);
@@ -1891,7 +1891,7 @@ public:
                                   const char* op = nullptr,
                                   double tol = -1.0);
 
-    TopoShape& makeElementBooleanBreakable(BRepAlgoAPI_BooleanOperation **fcbop,
+    TopoShape& makeElementBooleanBreakable(FCBRepAlgoAPI_BooleanOperation **fcbop,
                                           const char* maker,
                                           const std::vector<TopoShape>& sources,
                                           const char* op = nullptr,

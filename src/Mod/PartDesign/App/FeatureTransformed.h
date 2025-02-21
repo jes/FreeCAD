@@ -112,7 +112,7 @@ protected:
 
 private:
 
-    BRepAlgoAPI_BooleanOperation* fcbop;
+    FCBRepAlgoAPI_BooleanOperation* fcbop;
 };
 
 }  // namespace PartDesign
