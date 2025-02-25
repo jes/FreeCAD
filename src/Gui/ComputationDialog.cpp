@@ -8,14 +8,8 @@
 #include <Python.h>
 #include <FCConfig.h>
 
-#ifdef FC_OS_WIN32
-#include <windows.h>
-#endif
-
 #include <QApplication>
 #include <QCloseEvent>
-#include <QMessageBox>
-#include <QThread>
 #include <Base/ProgressIndicator.h>
 
 namespace Gui {
@@ -62,16 +56,6 @@ void ComputationDialog::abort() {
     reject();
 }
 
-void forceTerminate(std::thread& thread) {
-#if defined(FC_OS_WIN32)
-    TerminateThread(thread.native_handle(), 1);
-    CloseHandle(thread.native_handle());
-#else
-    pthread_cancel(thread.native_handle());
-#endif
-    thread.detach();
-}
-
 void ComputationDialog::run(std::function<void()> func) {
     std::atomic<bool> computationDone(false);
     std::mutex mutex;
@@ -92,21 +76,8 @@ void ComputationDialog::run(std::function<void()> func) {
 
     Base::ProgressIndicator::setInstance(this);
 
-    QMessageBox forceAbortBox(
-        QMessageBox::Warning,
-        QObject::tr("Operation not responding"),
-        QObject::tr("Aborting the operation is taking longer than expected.\nDo you want to forcibly cancel the thread? This will probably crash FreeCAD."),
-        QMessageBox::Yes | QMessageBox::No,
-        Gui::MainWindow::getInstance());
-    forceAbortBox.setDefaultButton(QMessageBox::No);
-
     // Start computation thread
     std::thread computeThread([&]() {
-#if !defined(FC_OS_WIN32)
-        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-        pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
-#endif
-
         try {
             func();
         } catch (...) {
@@ -117,9 +88,6 @@ void ComputationDialog::run(std::function<void()> func) {
 
         if (isVisible()) {
             QMetaObject::invokeMethod(this, "accept", Qt::QueuedConnection);
-        }
-        if (forceAbortBox.isVisible()) {
-            QMetaObject::invokeMethod(&forceAbortBox, "reject", Qt::QueuedConnection);
         }
 
         cv.notify_one();
@@ -132,24 +100,12 @@ void ComputationDialog::run(std::function<void()> func) {
             [&]{ return computationDone.load(); }))  // Atomic load
         {
             // Computation didn't finish quickly, show dialog
-            exec();
+            show();
+            while (!computationDone.load()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                QApplication::processEvents();
+            }
         }
-    }
-
-    while (!computationDone.load()) {
-        const int waitForThread = 3;  // seconds
-        std::unique_lock<std::mutex> lock(mutex);
-        const bool waited = cv.wait_for(lock, std::chrono::seconds(waitForThread),
-            [&]{ return computationDone.load(); });
-        if (waited || forceAbortBox.exec() != QMessageBox::Yes || computationDone.load()) {
-            continue;
-        }
-        Base::Console().Error("Force aborting computation thread\n");
-
-        // TODO: save the backup document now!
-
-        forceTerminate(computeThread);
-        break;
     }
 
     if (computeThread.joinable()) {
