@@ -24,6 +24,7 @@
 #ifndef SRC_APP_APPLICATION_H_
 #define SRC_APP_APPLICATION_H_
 
+#include "Base/Exception.h"
 #include <boost/signals2.hpp>
 
 #include <deque>
@@ -31,7 +32,14 @@
 #include <list>
 #include <set>
 #include <map>
+#include <memory>
 #include <string>
+
+#include <functional>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 
 #include <Base/Observer.h>
 #include <Base/Parameter.h>
@@ -76,6 +84,22 @@ enum class MessageOption {
 struct DocumentCreateFlags {
     bool createView {true};
     bool temporary {false};
+};
+
+struct RecomputeResult {
+    bool success;
+    std::unique_ptr<Base::Exception> exc;
+};
+
+struct RecomputeRequest {
+    // Document associated with the request
+    Document* document {nullptr};
+    // Document object associated with the request
+    DocumentObject* documentObject {nullptr};
+    bool recursive {false};
+    // Callback to be invoked when recompute is complete.
+    // The parameter indicates success (true) or failure (false)
+    std::function<void(RecomputeRequest&, RecomputeResult&)> callback {};
 };
 
 /** The Application
@@ -177,6 +201,11 @@ public:
     bool isRestoring() const;
     /// Indicate the application is closing all document
     bool isClosingAll() const;
+
+    /// returns if document and object recomputes should be done async
+    bool isAsyncRecomputeEnabled();
+    /// add a recompute request to the processing queue
+    void queueRecomputeRequest(RecomputeRequest req);
     //@}
 
     /** @name Application-wide trandaction setting */
@@ -631,6 +660,22 @@ private:
     // To prevent infinite recursion of reloading a partial document due a truly
     // missing object
     std::map<std::string,std::set<std::string> > _docReloadAttempts;
+
+    // --- Begin: Worker thread for processing DocumentRecomputeRequest ---
+    // This thread will process pending recompute requests from _documentRecomputeRequests.
+    std::thread _recomputeThread;
+    std::mutex _recomputeMutex;
+    std::condition_variable _recomputeCV;
+    std::atomic<bool> _stopRecomputeThread{false};
+
+    // Worker thread function that processes _documentRecomputeRequests.
+    void recomputeWorker();
+
+    // Helper to notify the worker thread when new requests are available.
+    void notifyRecomputeWorker();
+    // --- End: Worker thread additions ---
+
+    std::vector<RecomputeRequest> _recomputeRequests;
 
     bool _isRestoring{false};
     bool _allowPartial{false};

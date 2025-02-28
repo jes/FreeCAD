@@ -264,10 +264,20 @@ Application::Application(std::map<std::string,std::string> &mConfig)
     mpcPramManager["System parameter"] = _pcSysParamMngr;
     mpcPramManager["User parameter"] = _pcUserParamMngr;
 
+    _stopRecomputeThread = false;
+    _recomputeThread = std::thread(&Application::recomputeWorker, this);
+
     setupPythonTypes();
 }
 
-Application::~Application() = default;
+Application::~Application() {
+    // Signal the recompute worker thread to stop and join it.
+    _stopRecomputeThread = true;
+    _recomputeCV.notify_all();
+
+    if (_recomputeThread.joinable())
+        _recomputeThread.join();
+}
 
 void Application::setupPythonTypes()
 {
@@ -666,6 +676,18 @@ bool Application::isRestoring() const {
 
 bool Application::isClosingAll() const {
     return _isClosingAll;
+}
+
+bool Application::isAsyncRecomputeEnabled() {
+    return true;
+}
+
+void Application::queueRecomputeRequest(RecomputeRequest req) {
+    {
+        std::lock_guard<std::mutex> lock(_recomputeMutex);
+        _recomputeRequests.push_back(req);
+    }
+    _recomputeCV.notify_one();
 }
 
 struct DocTiming {
@@ -3582,3 +3604,51 @@ std::string Application::FindHomePath(const char* sCall)
 #else
 # error "std::string Application::FindHomePath(const char*) not implemented"
 #endif
+
+void Application::notifyRecomputeWorker() {
+    _recomputeCV.notify_one();
+}
+
+void Application::recomputeWorker() {
+    while (!_stopRecomputeThread) {
+        std::unique_lock<std::mutex> lock(_recomputeMutex);
+        // Wait until either stop is signaled or there is at least one pending request.
+        _recomputeCV.wait(lock, [this] {
+            return _stopRecomputeThread || !_recomputeRequests.empty();
+        });
+        if (_stopRecomputeThread)
+            break;
+
+        // Process all pending recompute requests.
+        while (!_recomputeRequests.empty()) {
+            // Retrieve the first request and remove it from the container.
+            RecomputeRequest request = _recomputeRequests.front();
+            _recomputeRequests.erase(_recomputeRequests.begin());
+ 
+            // Unlock while processing to allow other threads to add new requests.
+            lock.unlock();
+
+            RecomputeResult result;
+
+            try {
+                if (request.document) {
+                    request.document->recompute();
+                }
+
+                if (request.documentObject) {
+                    request.documentObject->recomputeFeature();
+                }
+            } catch (Base::Exception& exc) {
+                // result.exc = std::make_unique(new Base::Exception(exc));
+                result.success = false;
+            }
+ 
+            // Call the callback directly (no Qt dependency here)
+            if (request.callback) {
+                request.callback(request, result);
+            }
+
+            lock.lock();
+        }
+    }
+}

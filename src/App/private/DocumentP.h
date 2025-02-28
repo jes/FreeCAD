@@ -93,6 +93,10 @@ struct DocumentP
     unsigned int UndoMaxStackSize;
     std::string programVersion;
     mutable HasherMap hashers;
+
+    /// Queue for asynchronous recomputed object signals.
+    std::vector<DocumentObject*> pendingRecomputedObjects;
+
     std::multimap<const App::DocumentObject*, std::unique_ptr<App::DocumentObjectExecReturn>>
         _RecomputeLog;
 
