@@ -524,7 +524,6 @@ Document* Application::newDocument(const char * proposedName, const char * propo
     doc->signalRedo.connect(std::bind(&App::Application::slotRedoDocument, this, sp::_1));
     doc->signalRecomputedObject.connect(std::bind(&App::Application::slotRecomputedObject, this, sp::_1));
     doc->signalRecomputed.connect(std::bind(&App::Application::slotRecomputed, this, sp::_1));
-    doc->signalBeforeRecompute.connect(std::bind(&App::Application::slotBeforeRecompute, this, sp::_1));
     doc->signalOpenTransaction.connect(std::bind(&App::Application::slotOpenTransaction, this, sp::_1, sp::_2));
     doc->signalCommitTransaction.connect(std::bind(&App::Application::slotCommitTransaction, this, sp::_1));
     doc->signalAbortTransaction.connect(std::bind(&App::Application::slotAbortTransaction, this, sp::_1));
@@ -1661,11 +1660,6 @@ void Application::slotRecomputedObject(const DocumentObject& obj)
 void Application::slotRecomputed(const Document& doc)
 {
     this->signalRecomputed(doc);
-}
-
-void Application::slotBeforeRecompute(const Document& doc)
-{
-    this->signalBeforeRecomputeDocument(doc);
 }
 
 void Application::slotOpenTransaction(const Document& d, string s)

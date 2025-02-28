@@ -2996,7 +2996,6 @@ int Document::recompute(const std::vector<App::DocumentObject*>& objs,
     FC_TIME_INIT(t);
 
     Base::ObjectStatusLocker<Document::Status, Document> exe(Document::Recomputing, this);
-    signalBeforeRecompute(*this);
 
 #if 0
     //////////////////////////////////////////////////////////////////////////
