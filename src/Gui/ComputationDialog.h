@@ -11,19 +11,15 @@
 
 namespace Gui {
 
-class GuiExport ComputationDialog : public QProgressDialog, public Base::ProgressIndicator {
-    Q_OBJECT
+class GuiExport ComputationDialog : public Base::ProgressIndicator {
 public:
-    ComputationDialog(QWidget* parent = Gui::MainWindow::getInstance());
+    ComputationDialog() : aborted(false) {}
 
     // Message_ProgressIndicator interface implementation
     bool UserBreak() override;
     void Show(float position, bool isForce) override;
     void abort();
     void run(std::function<void()> func);
-
-protected:
-    void closeEvent(QCloseEvent* event) override;
 
 private:
     std::atomic<bool> aborted;

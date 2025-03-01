@@ -220,6 +220,20 @@ void SequencerBar::nextStep(bool canAbort)
     }
 }
 
+void SequencerBar::setPercent(int percent)
+{
+    QMetaObject::invokeMethod(d->bar, "show", Qt::QueuedConnection);
+    QMetaObject::invokeMethod(d->bar, "setRangeEx", Qt::QueuedConnection,
+        Q_ARG(int, 0), Q_ARG(int, 100));
+    QMetaObject::invokeMethod(d->bar, "setValueEx", Qt::QueuedConnection,
+        Q_ARG(int, percent));
+}
+
+void SequencerBar::hide()
+{
+    QMetaObject::invokeMethod(d->bar, "hide", Qt::QueuedConnection);
+}
+
 void SequencerBar::setProgress(size_t step)
 {
     QThread* currentThread = QThread::currentThread();

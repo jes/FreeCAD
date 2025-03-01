@@ -299,13 +299,8 @@ int main(int argc, char** argv)
     // set the task runner so that long-running operations can be aborted
     // and ensure it runs on the main thread using QMetaObject::invokeMethod
     App::Application::setTaskRunner([](const std::function<void()>& f) {
-        QMetaObject::invokeMethod(
-            qApp,
-            [f]() {
-                Gui::ComputationDialog dialog;
-                dialog.run(f);
-            },
-            Qt::BlockingQueuedConnection);
+        Gui::ComputationDialog dialog;
+        dialog.run(f);
     });
 
     // Run phase ===========================================================

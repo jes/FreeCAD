@@ -108,6 +108,9 @@ public:
 
     void checkAbort() override;
 
+    void setPercent(int percent);
+    void hide();
+
 protected:
     /** Construction */
     SequencerBar();
